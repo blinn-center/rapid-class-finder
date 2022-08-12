@@ -13,5 +13,6 @@ CREATE VIRTUAL TABLE course USING fts5(
     schedule_type,
     full_method,
     credits,
-    catalog_entry_link
+    catalog_entry_link,
+    tokenize = "trigram"
 )
