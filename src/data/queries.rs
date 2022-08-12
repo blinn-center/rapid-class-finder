@@ -7,13 +7,24 @@ use crate::data::{db::Database, types::SqlCourse};
 impl Database {
     pub async fn course_count(&self) -> Result<usize> {
         const QUERY: &str = include_str!("sql/course_count.sql");
-        trace!("executing course_count query: {}", QUERY);
-        Ok(self.conn().await.query_row(QUERY, (), |row| row.get(0))?)
+        let params = ();
+        trace!(
+            "executing course_count query: {:#?} params {:#?}",
+            QUERY,
+            params
+        );
+        Ok(self
+            .conn()
+            .await
+            .query_row(QUERY, params, |row| row.get(0))?)
     }
 
     pub async fn search(&self, query: &str, limit: usize) -> Result<Vec<SqlCourse>> {
+        const QUERY: &str = include_str!("sql/search.sql");
+        let params = (query, limit);
+        trace!("executing search query: {:#?} params {:#?}", QUERY, params);
         let conn = self.conn().await;
-        let mut stmt = conn.prepare(include_str!("sql/search.sql"))?;
+        let mut stmt = conn.prepare(QUERY)?;
         let rows = stmt.query((query, limit))?;
         Ok(rows
             .map(|row| {

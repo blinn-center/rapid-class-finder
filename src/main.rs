@@ -61,6 +61,10 @@ async fn execute_query_request(
 ) -> Result<Json<ExecuteQueryRequestMaybeResult>, (StatusCode, Json<ExecuteQueryRequestMaybeResult>)>
 {
     let limit = min(params.limit.unwrap_or(10), 100);
+    info!(
+        "received query for {:#?} with limit {:#?}",
+        &params.q, limit
+    );
     let courses = database.search(&params.q, limit).await.map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
