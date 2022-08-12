@@ -1,0 +1,79 @@
+on: [push]
+
+name: CI
+
+jobs:
+  cargo:
+    name: Cargo Build & Test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: "1.63"
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ github.token }}
+          args: --all-features --frozen --offline
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --all-features --frozen --offline
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --frozen --offline
+  build-docker:
+    name: Build Docker image
+    runs-on: ubuntu-22.04
+    concurrency:
+      group: "docker_${{ github.event_name == 'pull_request' && format('pr_{0}', github.event.number) || format('ref_{0}', github.ref) }}"
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Pull Docker images
+        run: make pre-pull
+      # - name: Set up QEMU
+      #   uses: docker/setup-qemu-action@v2.0.0
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+      - name: Set Docker Metadata
+        id: docker_metadata
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ghcr.io/blinn-center/rapid-class-finder
+          tags: |
+            type=schedule
+            type=semver,pattern={{version}}
+            type=ref,event=branch
+            type=ref,event=tag
+            type=ref,event=pr
+            type=sha
+            type=sha,format=long
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.description=A deployable image for the Rapid Class Finder engine
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          # Sadly qemu is too slow to be productive, this would be good to revisit when there are native arm64 workers
+          # though
+          # platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.docker_metadata.outputs.tags }}
+          labels: ${{ steps.docker_metadata.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
