@@ -8,3 +8,7 @@ revendor:
 	git config --local core.autocrlf false
 	rm -rf ./vendor
 	cargo vendor ./vendor
+
+.PHONY: deploy
+deploy:
+	fly deploy --nixpacks
