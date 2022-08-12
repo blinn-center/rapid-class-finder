@@ -4,6 +4,7 @@ use axum::{extract::Query, http::StatusCode, routing::get, Extension, Json, Rout
 use data::{db::Database, types::SqlCourse};
 use log::info;
 use serde::{Deserialize, Serialize};
+use tokio::time::Instant;
 use tower_http::cors::{AllowMethods, AllowOrigin, CorsLayer};
 
 use crate::data::download_full_database;
@@ -50,6 +51,7 @@ struct ExecuteQueryRequestResults {
     pub query: String,
     pub limit: usize,
     pub result_count: usize,
+    pub execution_seconds: f64,
     pub courses: Vec<SqlCourse>,
 }
 
@@ -71,6 +73,7 @@ async fn execute_query_request(
         "received query for {:#?} with limit {:#?}",
         &params.q, limit
     );
+    let start = Instant::now();
     let courses = database.search(&params.q, limit).await.map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -80,11 +83,13 @@ async fn execute_query_request(
             ))),
         )
     })?;
+    let execution_duration = start.elapsed();
     Ok(Json(ExecuteQueryRequestMaybeResult::Success(
         ExecuteQueryRequestResults {
             query: params.q,
             limit,
             result_count: courses.len(),
+            execution_seconds: execution_duration.as_secs_f64(),
             courses,
         },
     )))
