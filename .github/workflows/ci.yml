@@ -11,6 +11,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: "1.63"
+          components: clippy
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ github.token }}
