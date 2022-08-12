@@ -5,7 +5,7 @@ use data::{db::Database, types::SqlCourse};
 use log::info;
 use serde::{Deserialize, Serialize};
 
-use crate::data::get_full_database;
+use crate::data::download_full_database;
 
 mod data;
 
@@ -15,7 +15,9 @@ async fn main() -> eyre::Result<()> {
         env::set_var("RUST_LOG", "info");
     }
     pretty_env_logger::try_init()?;
-    let db = get_full_database("everything.json")?;
+    let db =
+        download_full_database("https://blinn-center.github.io/course-scraper/everything.json")
+            .await?;
     info!("Loaded {} courses", db.course_count().await?);
 
     let app = Router::new()

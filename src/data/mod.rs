@@ -1,5 +1,3 @@
-use std::{fmt::Debug, fs::File, path::Path};
-
 use eyre::Result;
 use log::{debug, trace};
 
@@ -14,14 +12,14 @@ pub mod db;
 pub mod queries;
 pub mod types;
 
-pub fn read_everything<P: AsRef<Path> + Debug>(path: P) -> Result<Everything> {
-    trace!("reading everything.json from {:#?}", path);
-    Ok(serde_json::from_reader(File::open(path)?)?)
+pub async fn download_everything(url: &str) -> Result<Everything> {
+    trace!("downloading everything.json from {:#?}", url);
+    Ok(reqwest::get(url).await?.json().await?)
 }
 
-pub fn get_full_database<P: AsRef<Path> + Debug>(path: P) -> Result<Database> {
+pub async fn download_full_database(url: &str) -> Result<Database> {
     debug!("reading everything");
-    let everything = read_everything(path)?;
+    let everything = download_everything(url).await?;
     debug!("creating database");
     let mut db = create_empty_database()?;
     debug!("inserting courses");
