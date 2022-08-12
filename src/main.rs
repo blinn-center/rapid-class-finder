@@ -51,7 +51,7 @@ struct ExecuteQueryRequestResults {
     pub query: String,
     pub limit: usize,
     pub result_count: usize,
-    pub execution_seconds: f64,
+    pub execution_microseconds: u128,
     pub courses: Vec<SqlCourse>,
 }
 
@@ -89,7 +89,7 @@ async fn execute_query_request(
             query: params.q,
             limit,
             result_count: courses.len(),
-            execution_seconds: execution_duration.as_secs_f64(),
+            execution_microseconds: execution_duration.as_micros(),
             courses,
         },
     )))
