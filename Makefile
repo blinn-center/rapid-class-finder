@@ -5,5 +5,6 @@ rapid-class-finder:
 
 .PHONY: revendor
 revendor:
+	git config --local core.autocrlf false
 	rm -rf ./vendor
 	cargo vendor ./vendor
