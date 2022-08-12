@@ -4,6 +4,7 @@ use axum::{extract::Query, http::StatusCode, routing::get, Extension, Json, Rout
 use data::{db::Database, types::SqlCourse};
 use log::info;
 use serde::{Deserialize, Serialize};
+use tower_http::cors::{AllowMethods, AllowOrigin, CorsLayer};
 
 use crate::data::download_full_database;
 
@@ -20,9 +21,14 @@ async fn main() -> eyre::Result<()> {
             .await?;
     info!("Loaded {} courses", db.course_count().await?);
 
+    let cors = CorsLayer::new()
+        .allow_methods(AllowMethods::any())
+        .allow_origin(AllowOrigin::any());
+
     let app = Router::new()
         .route("/", get(execute_query_request))
-        .layer(Extension(Arc::new(db)));
+        .layer(Extension(Arc::new(db)))
+        .layer(cors);
 
     let bind = "0.0.0.0:3000".parse()?;
     info!("Starting server on {}", bind);
